@@ -15,36 +15,36 @@ function setMap() {
     .attr("height", height);
 
     //create Albers equal area conic projection centered on France
-    var projection = d3.geoAzimuthalEqualArea()
-    .center([-5, 37.5])
-    .rotate([90, 0, 0])
-    .scale(900)
+    var projection = d3.geoAlbers()
+    .center([0, 46.2])
+    .rotate([-2, 0, 0])
+    .parallels([43, 62])
+    .scale(2500)
     .translate([width / 2, height / 2]);
 
     var path = d3.geoPath()
     .projection(projection)
     
     //use Promise.all to parallelize asynchronous data loading
-    var promises = [];
-    promises.push(d3.csv("data/County_Health_Data_2022_Education.csv")); //load attributes from csv    
-    promises.push(d3.json("data/CountyData.topojson")); //load choropleth spatial data
-    promises.push(d3.json("data/Countries.topojson")); //load background spatial data   
-
+    var promises = [];    
+    promises.push(d3.csv("data/unitsData.csv")); //load attributes from csv    
+    promises.push(d3.json("data/EuropeCountries.topojson")); //load background spatial data    
+    promises.push(d3.json("data/FranceRegions.topojson")); //load choropleth spatial data    
     Promise.all(promises).then(callback);
 
     function callback(data){               
         
-        var csv = data[0];
-        var usEducation = data[1];
-        var Countries = data[2];
-        //console.log(csv);
-        console.log(usEducation);
+        var csvData = data[0],
+        europe = data[1],
+        france = data[2];
+        //console.log(csvData);
+        //console.log(europe);
+        console.log(france);
 
         //translate europe TopoJSON
-        var usCounties = topojson.feature(usEducation, usEducation.objects.CountyData).features;
-        var CountriesTopo = topojson.feature(Countries, Countries.objects.Countries);
-        console.log(usCounties)
-
+        var europeCountries = topojson.feature(europe, europe.objects.EuropeCountries);
+        var franceRegions = topojson.feature(france, france.objects.FranceRegions).features;
+        console.log(franceRegions)
         //create graticule generator
         var graticule = d3.geoGraticule()
         .step([5, 5]); //place graticule lines every 5 degrees of longitude and latitude
@@ -63,21 +63,22 @@ function setMap() {
         .attr("class", "gratLines") //assign class for styling
         .attr("d", path); //project graticule lines
 
-        var countries = map.append("path")
-        .datum(CountriesTopo)
-        .attr("class", "countries")
-        .attr("d", path);
-
-       //add us counties to map
-       var counties = map.selectAll(".counties")
-           .data(usCounties)
+       //add Europe countries to map
+       var countries = map.append("path")
+           .datum(europeCountries)
+           .attr("class", "countries")
+           .attr("d", path);
+    
+       //add France regions to map
+       var regions = map.selectAll(".regions")
+           .data(franceRegions)
            .enter()
            .append("path")
            .attr("class", function(d){
-               return "county " + d.properties.county;
+               return "regions " + d.properties.adm1_code;
            })
-           .attr("d", path)
-           
+           .attr("d", path);
+        //console.log(regions)
 
 
     };
